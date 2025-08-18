@@ -455,6 +455,18 @@
         font-size: 1.1em;
         opacity: 0.9;
       }
+
+      optgroup {
+        font-weight: bold;
+        color: #5f72bd;
+        font-size: 1.1em;
+      }
+
+      optgroup option {
+        font-weight: normal;
+        color: #333;
+        padding-right: 20px;
+      }
     </style>
   </head>
   <body>
@@ -488,8 +500,7 @@
               <label>نوع العملية:</label>
               <select id="transactionType" onchange="updateEmployeeSelects()">
                 <option value="">-- اختر نوع العملية --</option>
-                <option value="استلام">استلام من الأرشيف</option>
-                <option value="تسليم">تسليم إلى الأرشيف</option>
+                <option value="تسليم واستلام">تسليم واستلام</option>
               </select>
             </div>
 
@@ -709,11 +720,18 @@
       document.head.appendChild(script);
 
       // بيانات الموظفين
-const employees = {
-    مكتب: ['ربى الشريف', 'صفاء ابو قديري'],
-    أرشيف: ['مؤمن قازان', 'حسان قازان', 'عمار قازان'],
-    مبيعات: ['فايز المعاني', 'هبه']
-};
+      const employees = {
+        مكتب: ["ربى الشريف", "صفاء ابو قديري"],
+        أرشيف: ["مؤمن قازان", "حسان قازان", "عمار قازان"],
+        مبيعات: ["فايز المعاني", "هبه"],
+      };
+
+      // دمج جميع الموظفين في قائمة واحدة
+      const allEmployees = [
+        ...employees.مكتب,
+        ...employees.أرشيف,
+        ...employees.مبيعات,
+      ];
 
       // تهيئة التطبيق
       async function initializeApp() {
@@ -766,39 +784,70 @@ const employees = {
         }
       }
 
-      // تحديث قوائم الموظفين حسب نوع العملية
+      // تحديث قوائم الموظفين - السماح بالتسليم والاستلام بين الجميع
       function updateEmployeeSelects() {
-        const transactionType = document.getElementById('transactionType').value;
-        const fromSelect = document.getElementById('fromEmployee');
-        const toSelect = document.getElementById('toEmployee');
-        
+        const transactionType =
+          document.getElementById("transactionType").value;
+        const fromSelect = document.getElementById("fromEmployee");
+        const toSelect = document.getElementById("toEmployee");
+
         // مسح القوائم الحالية
-        fromSelect.innerHTML = '<option value="">-- اختر الموظف --</option>';
-        toSelect.innerHTML = '<option value="">-- اختر الموظف --</option>';
-        
-        if (transactionType === 'استلام') {
-            // استلام من الأرشيف: المُسلِّم من الأرشيف، المُستلِم من المكتب أو المبيعات
-            employees.أرشيف.forEach(emp => {
-                fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
-            });
-            employees.مكتب.forEach(emp => {
-                toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
-            });
-            employees.مبيعات.forEach(emp => {
-                toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
-            });
-        } else if (transactionType === 'تسليم') {
-            // تسليم إلى الأرشيف: المُسلِّم من المكتب أو المبيعات، المُستلِم من الأرشيف
-            employees.مكتب.forEach(emp => {
-                fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
-            });
-            employees.مبيعات.forEach(emp => {
-                fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
-            });
-            employees.أرشيف.forEach(emp => {
-                toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
-            });
+        fromSelect.innerHTML =
+          '<option value="">-- اختر الموظف المُسلِّم --</option>';
+        toSelect.innerHTML =
+          '<option value="">-- اختر الموظف المُستلِم --</option>';
+
+        if (transactionType === "تسليم واستلام") {
+          // إضافة جميع الموظفين مع أقسامهم للوضوح
+
+          // قائمة المُسلِّم
+          fromSelect.innerHTML += '<optgroup label="قسم المكتب">';
+          employees.مكتب.forEach((emp) => {
+            fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
+          });
+          fromSelect.innerHTML += "</optgroup>";
+
+          fromSelect.innerHTML += '<optgroup label="قسم الأرشيف">';
+          employees.أرشيف.forEach((emp) => {
+            fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
+          });
+          fromSelect.innerHTML += "</optgroup>";
+
+          fromSelect.innerHTML += '<optgroup label="قسم المبيعات">';
+          employees.مبيعات.forEach((emp) => {
+            fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
+          });
+          fromSelect.innerHTML += "</optgroup>";
+
+          // قائمة المُستلِم
+          toSelect.innerHTML += '<optgroup label="قسم المكتب">';
+          employees.مكتب.forEach((emp) => {
+            toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
+          });
+          toSelect.innerHTML += "</optgroup>";
+
+          toSelect.innerHTML += '<optgroup label="قسم الأرشيف">';
+          employees.أرشيف.forEach((emp) => {
+            toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
+          });
+          toSelect.innerHTML += "</optgroup>";
+
+          toSelect.innerHTML += '<optgroup label="قسم المبيعات">';
+          employees.مبيعات.forEach((emp) => {
+            toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
+          });
+          toSelect.innerHTML += "</optgroup>";
         }
+      }
+
+      // دالة للحصول على قسم الموظف
+      function getEmployeeDepartment(employeeName) {
+        for (const [dept, empList] of Object.entries(employees)) {
+          if (empList.includes(employeeName)) {
+            return dept;
+          }
+        }
+        return null;
       }
 
       // إرسال الحركة
@@ -843,11 +892,22 @@ const employees = {
           // إنشاء رقم الإيصال
           const receiptNumber = "RCP-" + Date.now();
 
+          // تحديد نوع الحركة بناءً على الأقسام
+          let actualTransactionType = "تسليم واستلام";
+          const fromDept = getEmployeeDepartment(fromEmployee);
+          const toDept = getEmployeeDepartment(toEmployee);
+
+          if (fromDept === "أرشيف" && toDept !== "أرشيف") {
+            actualTransactionType = "استلام";
+          } else if (fromDept !== "أرشيف" && toDept === "أرشيف") {
+            actualTransactionType = "تسليم";
+          }
+
           // إدخال الحركة
           const { data: transaction, error: transError } = await supabase
             .from("transactions")
             .insert({
-              transaction_type: transactionType,
+              transaction_type: actualTransactionType,
               from_employee_id: fromEmp.id,
               to_employee_id: toEmp.id,
               receipt_number: receiptNumber,
@@ -912,7 +972,7 @@ const employees = {
           // عرض الإيصال
           showReceipt({
             receiptNumber,
-            transactionType,
+            transactionType: actualTransactionType,
             fromEmployee,
             toEmployee,
             contractNumbers,
@@ -1526,47 +1586,51 @@ const employees = {
         }
       };
     </script>
-  
-<!-- Injected by helper: enforce date format DD/MM/YYYY - hh:mm AM/PM for ar-SA -->
-<script>
-(function() {
-  // Keep originals
-  var _toLocaleString = Date.prototype.toLocaleString;
-  var _toLocaleDateString = Date.prototype.toLocaleDateString;
 
-  function pad2(n){ return String(n).padStart(2, "0"); }
-  function fmt(d){
-    try {
-      var day = pad2(d.getDate());
-      var mon = pad2(d.getMonth() + 1);
-      var yr  = d.getFullYear();
-      var h   = d.getHours();
-      var m   = pad2(d.getMinutes());
-      var ampm = (h >= 12) ? "PM" : "AM";
-      h = h % 12; h = h ? h : 12;
-      h = pad2(h);
-      return day + "/" + mon + "/" + yr + " - " + h + ":" + m + " " + ampm;
-    } catch(e) {
-      return "-";
-    }
-  }
+    <!-- Injected by helper: enforce date format DD/MM/YYYY - hh:mm AM/PM for ar-SA -->
+    <script>
+      (function () {
+        // Keep originals
+        var _toLocaleString = Date.prototype.toLocaleString;
+        var _toLocaleDateString = Date.prototype.toLocaleDateString;
 
-  Date.prototype.toLocaleString = function(locale, options) {
-    if (locale === "ar-SA") {
-      return fmt(this);
-    }
-    // Fallback to original behavior
-    return _toLocaleString.apply(this, arguments);
-  };
+        function pad2(n) {
+          return String(n).padStart(2, "0");
+        }
+        function fmt(d) {
+          try {
+            var day = pad2(d.getDate());
+            var mon = pad2(d.getMonth() + 1);
+            var yr = d.getFullYear();
+            var h = d.getHours();
+            var m = pad2(d.getMinutes());
+            var ampm = h >= 12 ? "PM" : "AM";
+            h = h % 12;
+            h = h ? h : 12;
+            h = pad2(h);
+            return (
+              day + "/" + mon + "/" + yr + " - " + h + ":" + m + " " + ampm
+            );
+          } catch (e) {
+            return "-";
+          }
+        }
 
-  Date.prototype.toLocaleDateString = function(locale, options) {
-    if (locale === "ar-SA") {
-      return fmt(this);
-    }
-    return _toLocaleDateString.apply(this, arguments);
-  };
-})();
-</script>
+        Date.prototype.toLocaleString = function (locale, options) {
+          if (locale === "ar-SA") {
+            return fmt(this);
+          }
+          // Fallback to original behavior
+          return _toLocaleString.apply(this, arguments);
+        };
 
-</body>
+        Date.prototype.toLocaleDateString = function (locale, options) {
+          if (locale === "ar-SA") {
+            return fmt(this);
+          }
+          return _toLocaleDateString.apply(this, arguments);
+        };
+      })();
+    </script>
+  </body>
 </html>
