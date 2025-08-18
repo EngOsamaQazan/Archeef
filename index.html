@@ -709,10 +709,11 @@
       document.head.appendChild(script);
 
       // بيانات الموظفين
-      const employees = {
-        مكتب: ["ربى الشريف", "صفاء ابو قديري"],
-        أرشيف: ["مؤمن قازان", "حسان قازان", "عمار قازان"],
-      };
+const employees = {
+    مكتب: ['ربى الشريف', 'صفاء ابو قديري'],
+    أرشيف: ['مؤمن قازان', 'حسان قازان', 'عمار قازان'],
+    مبيعات: ['فايز المعاني', 'هبه']
+};
 
       // تهيئة التطبيق
       async function initializeApp() {
@@ -767,31 +768,36 @@
 
       // تحديث قوائم الموظفين حسب نوع العملية
       function updateEmployeeSelects() {
-        const transactionType =
-          document.getElementById("transactionType").value;
-        const fromSelect = document.getElementById("fromEmployee");
-        const toSelect = document.getElementById("toEmployee");
-
+        const transactionType = document.getElementById('transactionType').value;
+        const fromSelect = document.getElementById('fromEmployee');
+        const toSelect = document.getElementById('toEmployee');
+        
         // مسح القوائم الحالية
         fromSelect.innerHTML = '<option value="">-- اختر الموظف --</option>';
         toSelect.innerHTML = '<option value="">-- اختر الموظف --</option>';
-
-        if (transactionType === "استلام") {
-          // استلام من الأرشيف: المُسلِّم من الأرشيف، المُستلِم من المكتب
-          employees.أرشيف.forEach((emp) => {
-            fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
-          });
-          employees.مكتب.forEach((emp) => {
-            toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
-          });
-        } else if (transactionType === "تسليم") {
-          // تسليم إلى الأرشيف: المُسلِّم من المكتب، المُستلِم من الأرشيف
-          employees.مكتب.forEach((emp) => {
-            fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
-          });
-          employees.أرشيف.forEach((emp) => {
-            toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
-          });
+        
+        if (transactionType === 'استلام') {
+            // استلام من الأرشيف: المُسلِّم من الأرشيف، المُستلِم من المكتب أو المبيعات
+            employees.أرشيف.forEach(emp => {
+                fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
+            });
+            employees.مكتب.forEach(emp => {
+                toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
+            });
+            employees.مبيعات.forEach(emp => {
+                toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
+            });
+        } else if (transactionType === 'تسليم') {
+            // تسليم إلى الأرشيف: المُسلِّم من المكتب أو المبيعات، المُستلِم من الأرشيف
+            employees.مكتب.forEach(emp => {
+                fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
+            });
+            employees.مبيعات.forEach(emp => {
+                fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
+            });
+            employees.أرشيف.forEach(emp => {
+                toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
+            });
         }
       }
 
