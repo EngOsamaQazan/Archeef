@@ -719,19 +719,8 @@
       };
       document.head.appendChild(script);
 
-      // بيانات الموظفين
-      const employees = {
-        مكتب: ["ربى الشريف", "صفاء ابو قديري"],
-        أرشيف: ["مؤمن قازان", "حسان قازان", "عمار قازان"],
-        مبيعات: ["فايز المعاني", "هبه"],
-      };
-
-      // دمج جميع الموظفين في قائمة واحدة
-      const allEmployees = [
-        ...employees.مكتب,
-        ...employees.أرشيف,
-        ...employees.مبيعات,
-      ];
+      // بيانات الموظفين من قاعدة البيانات (تجميع حسب القسم)
+      let employeesByDept = {};
 
       // تهيئة التطبيق
       async function initializeApp() {
@@ -749,6 +738,21 @@
             .order("name");
 
           if (error) throw error;
+
+          // بناء employeesByDept ديناميكياً من قاعدة البيانات
+          employeesByDept = {};
+          if (Array.isArray(data)) {
+            data.forEach((row) => {
+              const dept = row.department || "غير محدد";
+              const name = row.name;
+              if (!employeesByDept[dept]) employeesByDept[dept] = [];
+              if (name) employeesByDept[dept].push(name);
+            });
+            // ترتيب الأسماء داخل كل قسم للاستخدام المرتّب في القوائم
+            Object.keys(employeesByDept).forEach((dept) => {
+              employeesByDept[dept].sort((a, b) => a.localeCompare(b, "ar"));
+            });
+          }
 
           // تحديث قوائم الموظفين
           updateEmployeeSelects();
@@ -802,47 +806,47 @@
 
           // قائمة المُسلِّم
           fromSelect.innerHTML += '<optgroup label="قسم المكتب">';
-          employees.مكتب.forEach((emp) => {
+          (employeesByDept["مكتب"] || []).forEach((emp) => {
             fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
           });
           fromSelect.innerHTML += "</optgroup>";
 
           fromSelect.innerHTML += '<optgroup label="قسم الأرشيف">';
-          employees.أرشيف.forEach((emp) => {
+          (employeesByDept["أرشيف"] || []).forEach((emp) => {
             fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
           });
           fromSelect.innerHTML += "</optgroup>";
 
           fromSelect.innerHTML += '<optgroup label="قسم المبيعات">';
-          employees.مبيعات.forEach((emp) => {
+          (employeesByDept["مبيعات"] || []).forEach((emp) => {
             fromSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
           });
           fromSelect.innerHTML += "</optgroup>";
 
           // قائمة المُستلِم
           toSelect.innerHTML += '<optgroup label="قسم المكتب">';
-          employees.مكتب.forEach((emp) => {
+          (employeesByDept["مكتب"] || []).forEach((emp) => {
             toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
           });
           toSelect.innerHTML += "</optgroup>";
 
           toSelect.innerHTML += '<optgroup label="قسم الأرشيف">';
-          employees.أرشيف.forEach((emp) => {
+          (employeesByDept["أرشيف"] || []).forEach((emp) => {
             toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
           });
           toSelect.innerHTML += "</optgroup>";
 
           toSelect.innerHTML += '<optgroup label="قسم المبيعات">';
-          employees.مبيعات.forEach((emp) => {
+          (employeesByDept["مبيعات"] || []).forEach((emp) => {
             toSelect.innerHTML += `<option value="${emp}">${emp}</option>`;
           });
           toSelect.innerHTML += "</optgroup>";
         }
       }
 
-      // دالة للحصول على قسم الموظف
+      // دالة للحصول على قسم الموظف (من البيانات المحمّلة)
       function getEmployeeDepartment(employeeName) {
-        for (const [dept, empList] of Object.entries(employees)) {
+        for (const [dept, empList] of Object.entries(employeesByDept)) {
           if (empList.includes(employeeName)) {
             return dept;
           }
