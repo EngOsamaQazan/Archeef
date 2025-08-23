@@ -24,6 +24,7 @@ class AuthManager {
                 await this.handleAuthSuccess(session.user);
             } else {
                 this.showLoginForm();
+                return; // توقف هنا إذا لم يكن هناك جلسة
             }
 
             // مراقبة تغييرات المصادقة

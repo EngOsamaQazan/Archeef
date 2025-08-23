@@ -24,20 +24,20 @@ class DocumentManagementApp {
         try {
             console.log('🚀 بدء تهيئة التطبيق...');
 
+            // التحقق من حالة المصادقة أولاً
+            if (this.isAuthRequired) {
+                await this.managers.auth.initialize();
+                
+                // إذا لم يكن المستخدم مصادق عليه، توقف هنا
+                if (!this.managers.auth.isAuthenticated) {
+                    console.log('المستخدم غير مصادق عليه، عرض نموذج تسجيل الدخول');
+                    return;
+                }
+            }
             // تهيئة قاعدة البيانات أولاً
             const dbConnected = await this.managers.db.initialize();
             if (!dbConnected) {
                 throw new Error('فشل في الاتصال بقاعدة البيانات');
-            }
-
-            // تهيئة نظام المصادقة بعد قاعدة البيانات
-            if (this.isAuthRequired) {
-                await this.managers.auth.initialize();
-                
-                // التحقق من المصادقة قبل المتابعة
-                if (!this.managers.auth.isAuthenticated) {
-                    return; // سيتم عرض نموذج تسجيل الدخول
-                }
             }
 
             // تهيئة واجهة المستخدم
