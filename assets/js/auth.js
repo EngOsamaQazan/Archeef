@@ -430,7 +430,7 @@ class AuthManager {
             } else if (error.message.includes('User already registered')) {
                 errorMessage = 'المستخدم مسجل مسبقاً، يرجى المحاولة مرة أخرى';
             } else if (error.message.includes('Invalid login credentials')) {
-                errorMessage = 'فشل في إنشاء الحساب أو تسجيل الدخول، يرجى التحقق من البيانات';
+                errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة، يرجى التحقق من بيانات الاعتماد.';
             }
 
             if (this.loginAttempts >= this.maxLoginAttempts) {
