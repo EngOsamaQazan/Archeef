@@ -459,7 +459,9 @@ class AuthManager {
             
             let errorMessage = 'حدث خطأ في تسجيل الدخول';
             
-            if (error.message.includes('Email not confirmed')) {
+            if (error.message.includes('Invalid login credentials')) {
+                errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+            } else if (error.message.includes('Email not confirmed')) {
                 errorMessage = 'يرجى تأكيد بريدك الإلكتروني أولاً';
             } else if (error.message.includes('Too many requests')) {
                 errorMessage = 'تم تجاوز عدد المحاولات المسموحة، يرجى المحاولة لاحقاً';
