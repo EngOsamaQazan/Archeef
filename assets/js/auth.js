@@ -595,8 +595,161 @@ class AuthManager {
      * عرض نموذج إعادة تعيين كلمة المرور
      */
     showForgotPassword() {
-        // يمكن تطوير هذه الميزة لاحقاً
-        alert('ميزة إعادة تعيين كلمة المرور قيد التطوير');
+        document.body.innerHTML = `
+            <div class="auth-container">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <div class="auth-logo">🔑</div>
+                        <h1>إعادة تعيين كلمة المرور</h1>
+                        <p>أدخل بريدك الإلكتروني لإرسال رابط إعادة التعيين</p>
+                    </div>
+
+                    <form id="resetForm" class="auth-form">
+                        <div class="form-group">
+                            <label for="resetEmail">البريد الإلكتروني</label>
+                            <input 
+                                type="email" 
+                                id="resetEmail" 
+                                required 
+                                placeholder="أدخل بريدك الإلكتروني"
+                                autocomplete="email"
+                            >
+                        </div>
+
+                        <button type="submit" class="auth-btn" id="resetBtn">
+                            <span class="btn-text">إرسال رابط إعادة التعيين</span>
+                            <div class="btn-spinner" style="display: none;"></div>
+                        </button>
+
+                        <div id="resetError" class="auth-error" style="display: none;"></div>
+                        <div id="resetSuccess" class="auth-success" style="display: none;"></div>
+                    </form>
+
+                    <div class="auth-footer">
+                        <p>تذكرت كلمة المرور؟ <a href="#" onclick="authManager.showLoginForm()">تسجيل الدخول</a></p>
+                    </div>
+                </div>
+
+                <div class="auth-background">
+                    <div class="auth-pattern"></div>
+                </div>
+            </div>
+
+            <style>
+                .auth-success {
+                    background: #c6f6d5;
+                    color: #22543d;
+                    padding: 0.75rem;
+                    border-radius: 8px;
+                    font-size: 0.9rem;
+                    margin-top: 1rem;
+                    border: 1px solid #9ae6b4;
+                }
+            </style>
+        `;
+
+        // إعداد مستمع نموذج إعادة التعيين
+        document.getElementById('resetForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handlePasswordReset();
+        });
+
+        // التركيز على حقل البريد الإلكتروني
+        setTimeout(() => {
+            document.getElementById('resetEmail').focus();
+        }, 100);
+    }
+
+    /**
+     * معالجة إعادة تعيين كلمة المرور
+     */
+    async handlePasswordReset() {
+        const email = document.getElementById('resetEmail').value.trim();
+        const resetBtn = document.getElementById('resetBtn');
+        const btnText = resetBtn.querySelector('.btn-text');
+        const btnSpinner = resetBtn.querySelector('.btn-spinner');
+        const errorDiv = document.getElementById('resetError');
+        const successDiv = document.getElementById('resetSuccess');
+
+        // إخفاء رسائل سابقة
+        errorDiv.style.display = 'none';
+        successDiv.style.display = 'none';
+
+        // التحقق من صحة البيانات
+        if (!email) {
+            this.showResetError('يرجى إدخال البريد الإلكتروني');
+            return;
+        }
+
+        if (!this.isValidEmail(email)) {
+            this.showResetError('يرجى إدخال بريد إلكتروني صحيح');
+            return;
+        }
+
+        try {
+            // تعطيل الزر وإظهار مؤشر التحميل
+            resetBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnSpinner.style.display = 'block';
+
+            // إرسال رابط إعادة التعيين
+            const { error } = await db.supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`
+            });
+
+            if (error) {
+                throw error;
+            }
+
+            // نجح الإرسال
+            this.showResetSuccess('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني. يرجى التحقق من صندوق الوارد والبريد المزعج.');
+
+        } catch (error) {
+            console.error('خطأ في إعادة تعيين كلمة المرور:', error);
+            
+            let errorMessage = 'حدث خطأ في إرسال رابط إعادة التعيين';
+            
+            if (error.message.includes('User not found')) {
+                errorMessage = 'البريد الإلكتروني غير مسجل في النظام';
+            } else if (error.message.includes('Email rate limit exceeded')) {
+                errorMessage = 'تم تجاوز الحد المسموح لإرسال الرسائل، يرجى المحاولة لاحقاً';
+            }
+
+            this.showResetError(errorMessage);
+
+        } finally {
+            // إعادة تفعيل الزر
+            resetBtn.disabled = false;
+            btnText.style.display = 'inline';
+            btnSpinner.style.display = 'none';
+        }
+    }
+
+    /**
+     * عرض رسالة خطأ إعادة التعيين
+     */
+    showResetError(message) {
+        const errorDiv = document.getElementById('resetError');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // إخفاء الرسالة بعد 5 ثوان
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+    }
+
+    /**
+     * عرض رسالة نجاح إعادة التعيين
+     */
+    showResetSuccess(message) {
+        const successDiv = document.getElementById('resetSuccess');
+        if (successDiv) {
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
     }
 
     /**
