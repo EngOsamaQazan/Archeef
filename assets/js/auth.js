@@ -432,20 +432,14 @@ class AuthManager {
                 if (signUpData.user) {
                     console.log('تم إنشاء المستخدم، محاولة تسجيل الدخول...');
                     
-                    // انتظار قليل للتأكد من إنشاء المستخدم
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // عرض رسالة نجاح وطلب تأكيد البريد الإلكتروني
+                    this.showAuthError('تم إنشاء الحساب بنجاح! يرجى التحقق من بريدك الإلكتروني وتأكيد الحساب، ثم العودة لتسجيل الدخول.');
                     
-                    const { data: loginData, error: loginError } = await db.supabase.auth.signInWithPassword({
-                        email,
-                        password
-                    });
-
-                    if (loginError) {
-                        throw new Error('تم إنشاء الحساب بنجاح، يرجى تأكيد بريدك الإلكتروني ثم المحاولة مرة أخرى');
-                    }
-
-                    data = loginData;
-                    error = loginError;
+                    // إعادة تفعيل الزر والعودة
+                    loginBtn.disabled = false;
+                    btnText.style.display = 'inline';
+                    btnSpinner.style.display = 'none';
+                    return;
                 }
             } else if (error) {
                 throw error;
