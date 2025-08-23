@@ -223,6 +223,36 @@ body {
     margin-top: var(--spacing-xs);
 }
 
+/* ===== User Menu ===== */
+.user-menu-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: var(--white);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    backdrop-filter: blur(10px);
+    font-family: var(--font-family);
+}
+
+.user-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.user-icon {
+    font-size: var(--font-size-lg);
+}
+
+.user-name {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+}
+
 /* ===== Navigation ===== */
 .app-nav {
     background: var(--white);

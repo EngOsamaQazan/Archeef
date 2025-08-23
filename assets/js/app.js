@@ -6,9 +6,11 @@
 class DocumentManagementApp {
     constructor() {
         this.isInitialized = false;
+        this.isAuthRequired = true;
         this.managers = {
             ui: ui,
             db: db,
+            auth: authManager,
             transaction: transactionManager,
             search: searchManager,
             reports: reportsManager
@@ -21,6 +23,16 @@ class DocumentManagementApp {
     async initialize() {
         try {
             console.log('🚀 بدء تهيئة التطبيق...');
+
+            // تهيئة نظام المصادقة أولاً
+            if (this.isAuthRequired) {
+                await this.managers.auth.initialize();
+                
+                // التحقق من المصادقة قبل المتابعة
+                if (!this.managers.auth.isAuthenticated) {
+                    return; // سيتم عرض نموذج تسجيل الدخول
+                }
+            }
 
             // تهيئة قاعدة البيانات
             const dbConnected = await this.managers.db.initialize();
@@ -48,9 +60,15 @@ class DocumentManagementApp {
             this.isInitialized = true;
             console.log('✅ تم تهيئة التطبيق بنجاح');
 
+            // إظهار رسالة ترحيب مع اسم المستخدم
+            const userInfo = this.managers.auth.getCurrentUser();
+            const welcomeMessage = userInfo.employee ? 
+                `مرحباً ${userInfo.employee.name}` : 
+                'مرحباً بك في نظام إدارة الوثائق';
+            
             // إظهار رسالة ترحيب
             setTimeout(() => {
-                showAlert('مرحباً بك في نظام إدارة الوثائق', 'success');
+                showAlert(welcomeMessage, 'success');
             }, 1000);
 
         } catch (error) {

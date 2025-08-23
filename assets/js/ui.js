@@ -193,8 +193,22 @@ class UIManager {
 
             const recentActivity = await db.getRecentActivity(5);
             this.updateRecentActivity(recentActivity);
+
+            // تحديث اسم المستخدم في الرأس
+            this.updateUserInfo();
         } catch (error) {
             console.error('خطأ في تحميل بيانات لوحة التحكم:', error);
+        }
+    }
+
+    /**
+     * تحديث معلومات المستخدم
+     */
+    updateUserInfo() {
+        const userNameElement = document.getElementById('currentUserName');
+        if (userNameElement && authManager.isAuthenticated) {
+            const userInfo = authManager.getCurrentUser();
+            userNameElement.textContent = userInfo.employee?.name || 'المستخدم';
         }
     }
 
