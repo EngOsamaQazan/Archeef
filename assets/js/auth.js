@@ -100,6 +100,7 @@ class AuthManager {
 
                     <div class="auth-footer">
                         <p>نسيت كلمة المرور؟ <a href="#" onclick="authManager.showForgotPassword()">إعادة تعيين</a></p>
+                        <p style="margin-top: 1rem;">ليس لديك حساب؟ <a href="#" onclick="authManager.showSignupForm()">تسجيل حساب جديد</a></p>
                     </div>
                 </div>
 
@@ -349,6 +350,249 @@ class AuthManager {
         setTimeout(() => {
             document.getElementById('email').focus();
         }, 100);
+    }
+
+    /**
+     * عرض نموذج تسجيل حساب جديد
+     */
+    showSignupForm() {
+        document.body.innerHTML = `
+            <div class="auth-container">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <div class="auth-logo">📝</div>
+                        <h1>تسجيل حساب جديد</h1>
+                        <p>أنشئ حساباً جديداً للوصول إلى النظام</p>
+                    </div>
+
+                    <form id="signupForm" class="auth-form">
+                        <div class="form-group">
+                            <label for="signupEmail">البريد الإلكتروني</label>
+                            <input 
+                                type="email" 
+                                id="signupEmail" 
+                                required 
+                                placeholder="أدخل بريدك الإلكتروني"
+                                autocomplete="email"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="signupPassword">كلمة المرور</label>
+                            <div class="password-input">
+                                <input 
+                                    type="password" 
+                                    id="signupPassword" 
+                                    required 
+                                    placeholder="أدخل كلمة المرور (8 أحرف على الأقل)"
+                                    autocomplete="new-password"
+                                    minlength="8"
+                                >
+                                <button type="button" class="password-toggle" onclick="authManager.toggleSignupPassword()">
+                                    👁️
+                                </button>
+                            </div>
+                            <div class="form-help">
+                                يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirmPassword">تأكيد كلمة المرور</label>
+                            <input 
+                                type="password" 
+                                id="confirmPassword" 
+                                required 
+                                placeholder="أعد إدخال كلمة المرور"
+                                autocomplete="new-password"
+                                minlength="8"
+                            >
+                        </div>
+
+                        <button type="submit" class="auth-btn" id="signupBtn">
+                            <span class="btn-text">إرسال رابط التفعيل</span>
+                            <div class="btn-spinner" style="display: none;"></div>
+                        </button>
+
+                        <div id="signupError" class="auth-error" style="display: none;"></div>
+                        <div id="signupSuccess" class="auth-success" style="display: none;"></div>
+                    </form>
+
+                    <div class="auth-footer">
+                        <p>لديك حساب بالفعل؟ <a href="#" onclick="authManager.showLoginForm()">تسجيل الدخول</a></p>
+                    </div>
+                </div>
+
+                <div class="auth-background">
+                    <div class="auth-pattern"></div>
+                </div>
+            </div>
+
+            <style>
+                .auth-success {
+                    background: #f0fdf4;
+                    color: #166534;
+                    padding: 0.75rem;
+                    border-radius: 8px;
+                    font-size: 0.9rem;
+                    margin-top: 1rem;
+                    border: 1px solid #bbf7d0;
+                }
+
+                .form-help {
+                    font-size: 0.8rem;
+                    color: #718096;
+                    margin-top: 0.25rem;
+                }
+            </style>
+        `;
+
+        // إعداد مستمع نموذج التسجيل
+        document.getElementById('signupForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleSignup();
+        });
+
+        // التركيز على حقل البريد الإلكتروني
+        setTimeout(() => {
+            document.getElementById('signupEmail').focus();
+        }, 100);
+    }
+
+    /**
+     * تبديل إظهار/إخفاء كلمة المرور في نموذج التسجيل
+     */
+    toggleSignupPassword() {
+        const passwordInput = document.getElementById('signupPassword');
+        const toggleBtn = document.querySelector('.password-toggle');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleBtn.textContent = '🙈';
+        } else {
+            passwordInput.type = 'password';
+            toggleBtn.textContent = '👁️';
+        }
+    }
+
+    /**
+     * معالجة تسجيل حساب جديد
+     */
+    async handleSignup() {
+        const email = document.getElementById('signupEmail').value.trim();
+        const password = document.getElementById('signupPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const signupBtn = document.getElementById('signupBtn');
+        const btnText = signupBtn.querySelector('.btn-text');
+        const btnSpinner = signupBtn.querySelector('.btn-spinner');
+        const errorDiv = document.getElementById('signupError');
+        const successDiv = document.getElementById('signupSuccess');
+
+        // إخفاء رسائل الخطأ والنجاح السابقة
+        errorDiv.style.display = 'none';
+        successDiv.style.display = 'none';
+
+        // التحقق من صحة البيانات
+        if (!email || !password || !confirmPassword) {
+            this.showSignupError('يرجى ملء جميع الحقول المطلوبة');
+            return;
+        }
+
+        if (!this.isValidEmail(email)) {
+            this.showSignupError('يرجى إدخال بريد إلكتروني صحيح');
+            return;
+        }
+
+        if (password.length < 8) {
+            this.showSignupError('يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            this.showSignupError('كلمتا المرور غير متطابقتين');
+            return;
+        }
+
+        try {
+            // تعطيل الزر وإظهار مؤشر التحميل
+            signupBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnSpinner.style.display = 'block';
+
+            // محاولة تسجيل المستخدم الجديد
+            const { data, error } = await db.supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    emailRedirectTo: `${window.location.origin}/auth/callback`
+                }
+            });
+
+            if (error) {
+                throw error;
+            }
+
+            // نجح التسجيل
+            this.showSignupSuccess(
+                `تم إرسال رابط التفعيل إلى بريدك الإلكتروني: ${email}\n` +
+                'يرجى فتح البريد الإلكتروني والنقر على رابط التفعيل لتفعيل حسابك.'
+            );
+
+            // إخفاء النموذج بعد 3 ثوان والعودة لتسجيل الدخول
+            setTimeout(() => {
+                this.showLoginForm();
+            }, 5000);
+
+        } catch (error) {
+            console.error('خطأ في تسجيل المستخدم الجديد:', error);
+            
+            let errorMessage = 'حدث خطأ في تسجيل الحساب الجديد';
+            
+            if (error.message.includes('User already registered')) {
+                errorMessage = 'هذا البريد الإلكتروني مسجل مسبقاً، يرجى تسجيل الدخول أو استخدام بريد آخر';
+            } else if (error.message.includes('Invalid email')) {
+                errorMessage = 'البريد الإلكتروني غير صحيح';
+            } else if (error.message.includes('Password should be at least')) {
+                errorMessage = 'كلمة المرور ضعيفة، يرجى استخدام كلمة مرور أقوى';
+            } else if (error.message.includes('Signup is disabled')) {
+                errorMessage = 'تسجيل الحسابات الجديدة معطل حالياً';
+            }
+
+            this.showSignupError(errorMessage);
+
+        } finally {
+            // إعادة تفعيل الزر
+            signupBtn.disabled = false;
+            btnText.style.display = 'inline';
+            btnSpinner.style.display = 'none';
+        }
+    }
+
+    /**
+     * عرض رسالة خطأ التسجيل
+     */
+    showSignupError(message) {
+        const errorDiv = document.getElementById('signupError');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // إخفاء الرسالة بعد 8 ثوان
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 8000);
+        }
+    }
+
+    /**
+     * عرض رسالة نجاح التسجيل
+     */
+    showSignupSuccess(message) {
+        const successDiv = document.getElementById('signupSuccess');
+        if (successDiv) {
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
     }
 
     /**
@@ -667,6 +911,20 @@ class AuthManager {
                     <button class="menu-item" onclick="authManager.showAdminPanel()">
                         <span class="menu-icon">👑</span>
                         لوحة الإدارة
+                    </button>
+                    <button onclick="authManager.showSignupForm()" style="
+                        background: rgba(255, 255, 255, 0.2);
+                        color: white;
+                        border: 2px solid white;
+                        padding: 1rem 2rem;
+                        border-radius: 0.5rem;
+                        font-size: 1rem;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        margin-top: 1rem;
+                    " onmouseover="this.style.background='rgba(255,255,255,0.3)'" 
+                       onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                        📝 تسجيل حساب جديد
                     </button>
                 ` : ''}
                 <div class="menu-divider"></div>
