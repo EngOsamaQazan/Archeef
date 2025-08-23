@@ -399,13 +399,43 @@ class AuthManager {
             btnText.style.display = 'none';
             btnSpinner.style.display = 'block';
 
-            // محاولة تسجيل الدخول
-            const { data, error } = await db.supabase.auth.signInWithPassword({
+            // محاولة تسجيل الدخول أولاً
+            let { data, error } = await db.supabase.auth.signInWithPassword({
                 email,
                 password
             });
 
-            if (error) {
+            // إذا فشل تسجيل الدخول بسبب عدم وجود المستخدم، قم بإنشائه
+            if (error && error.message.includes('Invalid login credentials')) {
+                console.log('المستخدم غير موجود، جاري إنشاء حساب جديد...');
+                
+                // محاولة إنشاء المستخدم
+                const { data: signUpData, error: signUpError } = await db.supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        emailRedirectTo: undefined // تعطيل تأكيد البريد الإلكتروني
+                    }
+                });
+
+                if (signUpError) {
+                    throw signUpError;
+                }
+
+                // إذا تم إنشاء المستخدم بنجاح، قم بتسجيل الدخول مرة أخرى
+                if (signUpData.user) {
+                    const { data: loginData, error: loginError } = await db.supabase.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+
+                    if (loginError) {
+                        throw loginError;
+                    }
+
+                    data = loginData;
+                }
+            } else if (error) {
                 throw error;
             }
 
@@ -423,12 +453,14 @@ class AuthManager {
             
             let errorMessage = 'حدث خطأ في تسجيل الدخول';
             
-            if (error.message.includes('Invalid login credentials')) {
-                errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
-            } else if (error.message.includes('Email not confirmed')) {
+            if (error.message.includes('Email not confirmed')) {
                 errorMessage = 'يرجى تأكيد بريدك الإلكتروني أولاً';
             } else if (error.message.includes('Too many requests')) {
                 errorMessage = 'تم تجاوز عدد المحاولات المسموحة، يرجى المحاولة لاحقاً';
+            } else if (error.message.includes('User already registered')) {
+                errorMessage = 'المستخدم مسجل مسبقاً، يرجى المحاولة مرة أخرى';
+            } else if (error.message.includes('Invalid login credentials')) {
+                errorMessage = 'فشل في إنشاء الحساب أو تسجيل الدخول، يرجى التحقق من البيانات';
             }
 
             if (this.loginAttempts >= this.maxLoginAttempts) {
