@@ -93,12 +93,7 @@ class DocumentManagementApp {
                 `مرحباً ${userInfo.employee.name}` : 
                 'مرحباً بك في نظام إدارة الوثائق';
             
-            // إظهار رسالة ترحيب
-            setTimeout(() => {
-                if (typeof showAlert === 'function') {
-                    showAlert(welcomeMessage, 'success');
-                }
-            }, 1000);
+            // تم إلغاء رسالة الترحيب لتحسين تجربة المستخدم
 
         } catch (error) {
             console.error('❌ خطأ في متابعة تهيئة التطبيق:', error);
