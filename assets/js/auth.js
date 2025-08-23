@@ -700,7 +700,9 @@ class AuthManager {
             this.currentUser = user;
             this.isAuthenticated = true;
 
-            // جلب دور المستخدم مع معالجة الأخطاء
+            console.log('🔍 جلب بيانات المستخدم من app_users...');
+            
+            // جلب دور المستخدم مع معالجة محسنة للأخطاء
             let appUser = null;
             try {
                 const { data, error } = await db.supabase
@@ -710,73 +712,88 @@ class AuthManager {
                     .single();
                     
                 if (error && error.code !== 'PGRST116') {
-                    throw error;
+                    console.warn('خطأ في جلب بيانات المستخدم:', error);
                 }
                 
                 appUser = data;
+                console.log('📊 بيانات المستخدم المجلبة:', appUser);
             } catch (error) {
                 console.warn('لا يمكن جلب بيانات المستخدم من app_users:', error);
             }
 
             if (!appUser) {
-                // إنشاء مستخدم افتراضي إذا لم يكن موجوداً
-                console.log('إنشاء مستخدم افتراضي...');
+                console.log('🔧 إنشاء مستخدم افتراضي في app_users...');
+                
+                // تحديد الدور بناءً على البريد الإلكتروني
+                const defaultRole = user.email === 'osamaqazan89@gmail.com' ? 'manager' : 'employee';
+                
                 try {
                     const { data: newAppUser, error: insertError } = await db.supabase
                         .from('app_users')
                         .insert({
                             user_id: user.id,
-                            role: user.email === 'osamaqazan89@gmail.com' ? 'manager' : 'employee',
+                            role: defaultRole,
                             is_active: true
                         })
                         .select('role, employee_id')
                         .single();
                         
                     if (insertError) {
-                        console.warn('لا يمكن إنشاء مستخدم افتراضي:', insertError);
-                        // استخدام قيم افتراضية
+                        console.warn('⚠️ لا يمكن إنشاء مستخدم في قاعدة البيانات:', insertError);
+                        console.log('📝 استخدام قيم افتراضية محلية...');
+                        
                         appUser = {
-                            role: user.email === 'osamaqazan89@gmail.com' ? 'manager' : 'employee',
+                            role: defaultRole,
                             employee_id: null,
                             employees: null
                         };
                     } else {
+                        console.log('✅ تم إنشاء المستخدم بنجاح:', newAppUser);
                         appUser = newAppUser;
                     }
                 } catch (error) {
-                    console.warn('خطأ في إنشاء المستخدم الافتراضي:', error);
-                    // استخدام قيم افتراضية
+                    console.error('❌ خطأ في إنشاء المستخدم الافتراضي:', error);
+                    console.log('📝 استخدام قيم افتراضية كحل أخير...');
+                    
                     appUser = {
-                        role: user.email === 'osamaqazan89@gmail.com' ? 'manager' : 'employee',
+                        role: defaultRole,
                         employee_id: null,
                         employees: null
                     };
                 }
             }
 
+            // تعيين دور المستخدم وبياناته
             this.userRole = appUser.role;
             this.employeeData = appUser.employees;
 
-            console.log('تم تسجيل الدخول بنجاح:', {
+            console.log('✅ تم تسجيل الدخول بنجاح:', {
                 email: user.email,
                 role: this.userRole,
-                employee: this.employeeData?.name
+                employee: this.employeeData?.name || 'غير محدد'
             });
 
-            // إعادة تحميل التطبيق الرئيسي
+            // تحميل التطبيق الرئيسي
             await this.loadMainApp();
 
         } catch (error) {
             console.error('خطأ في معالجة نجاح المصادقة:', error);
-            this.showAuthError('تحذير: بعض بيانات المستخدم قد لا تكون متاحة');
             
-            // لا نقوم بتسجيل الخروج، بل نسمح بالمتابعة مع بيانات محدودة
+            // في حالة الخطأ، استخدم قيم افتراضية واستمر
+            console.log('🔄 استخدام قيم افتراضية والمتابعة...');
+            
             this.userRole = user.email === 'osamaqazan89@gmail.com' ? 'manager' : 'employee';
             this.employeeData = null;
             
+            // عرض تحذير للمستخدم
             setTimeout(() => {
-                this.loadMainApp();
-            }, 2000);
+                if (typeof showAlert === 'function') {
+                    showAlert('تم تسجيل الدخول بنجاح، لكن بعض البيانات قد لا تكون متاحة', 'warning');
+                }
+            }, 1000);
+            
+            // تحميل التطبيق رغم الخطأ
+            await this.loadMainApp();
         }
     }
 
@@ -784,8 +801,71 @@ class AuthManager {
      * تحميل التطبيق الرئيسي
      */
     async loadMainApp() {
-        // إعادة تحميل الصفحة لعرض التطبيق الرئيسي
-        location.reload();
+        try {
+            console.log('🚀 تحميل التطبيق الرئيسي...');
+            
+            // إخفاء شاشة التحميل
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) {
+                loadingScreen.classList.add('hidden');
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 500);
+            }
+            
+            // إظهار التطبيق الرئيسي
+            const appContainer = document.getElementById('appContainer');
+            if (appContainer) {
+                appContainer.classList.add('loaded');
+                appContainer.style.display = 'flex';
+            }
+            
+            // تهيئة التطبيق الرئيسي
+            if (typeof app !== 'undefined' && app.initialize) {
+                console.log('🔧 تهيئة مكونات التطبيق...');
+                await app.continueInitialization();
+            }
+            
+            console.log('✅ تم تحميل التطبيق الرئيسي بنجاح');
+            
+        } catch (error) {
+            console.error('❌ خطأ في تحميل التطبيق الرئيسي:', error);
+            
+            // في حالة الخطأ، أظهر رسالة خطأ
+            document.body.innerHTML = `
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                    background: linear-gradient(135deg, #ef4444, #dc2626);
+                    color: white;
+                    font-family: 'Cairo', sans-serif;
+                    text-align: center;
+                    padding: 2rem;
+                ">
+                    <div style="max-width: 500px;">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;">⚠️</div>
+                        <h1 style="font-size: 2rem; margin-bottom: 1rem;">خطأ في تحميل التطبيق</h1>
+                        <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">
+                            حدث خطأ أثناء تحميل التطبيق الرئيسي
+                        </p>
+                        <button onclick="location.reload()" style="
+                            background: rgba(255, 255, 255, 0.2);
+                            color: white;
+                            border: 2px solid white;
+                            padding: 1rem 2rem;
+                            border-radius: 0.5rem;
+                            font-size: 1rem;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        ">
+                            🔄 إعادة تحميل الصفحة
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     /**

@@ -26,35 +26,62 @@ class DocumentManagementApp {
 
             // التحقق من حالة المصادقة أولاً
             if (this.isAuthRequired) {
+                console.log('🔐 فحص حالة المصادقة...');
                 await this.managers.auth.initialize();
                 
                 // إذا لم يكن المستخدم مصادق عليه، توقف هنا
                 if (!this.managers.auth.isAuthenticated) {
-                    console.log('المستخدم غير مصادق عليه، عرض نموذج تسجيل الدخول');
+                    console.log('❌ المستخدم غير مصادق عليه، عرض نموذج تسجيل الدخول');
                     return;
                 }
+                
+                console.log('✅ المستخدم مصادق عليه، المتابعة...');
             }
+            
+            // متابعة التهيئة
+            await this.continueInitialization();
+            
+        } catch (error) {
+            console.error('❌ خطأ في تهيئة التطبيق:', error);
+            this.handleInitializationError(error);
+        }
+    }
+
+    /**
+     * متابعة تهيئة التطبيق بعد المصادقة
+     */
+    async continueInitialization() {
+        try {
+            console.log('🔧 متابعة تهيئة مكونات التطبيق...');
+            
             // تهيئة قاعدة البيانات أولاً
+            console.log('🗄️ تهيئة قاعدة البيانات...');
             const dbConnected = await this.managers.db.initialize();
             if (!dbConnected) {
                 throw new Error('فشل في الاتصال بقاعدة البيانات');
             }
+            console.log('✅ تم الاتصال بقاعدة البيانات');
 
             // تهيئة واجهة المستخدم
+            console.log('🎨 تهيئة واجهة المستخدم...');
             this.managers.ui.initialize();
 
             // تهيئة المدراء الآخرين
+            console.log('⚙️ تهيئة المدراء...');
             this.managers.transaction.initialize();
             this.managers.search.initialize();
             this.managers.reports.initialize();
 
             // إعداد معالجات الأخطاء العامة
+            console.log('🛡️ إعداد معالجات الأخطاء...');
             this.setupErrorHandlers();
 
             // إعداد معالجات الشبكة
+            console.log('🌐 إعداد معالجات الشبكة...');
             this.setupNetworkHandlers();
 
             // تحميل البيانات الأولية
+            console.log('📊 تحميل البيانات الأولية...');
             await this.loadInitialData();
 
             this.isInitialized = true;
@@ -68,11 +95,13 @@ class DocumentManagementApp {
             
             // إظهار رسالة ترحيب
             setTimeout(() => {
-                showAlert(welcomeMessage, 'success');
+                if (typeof showAlert === 'function') {
+                    showAlert(welcomeMessage, 'success');
+                }
             }, 1000);
 
         } catch (error) {
-            console.error('❌ خطأ في تهيئة التطبيق:', error);
+            console.error('❌ خطأ في متابعة تهيئة التطبيق:', error);
             this.handleInitializationError(error);
         }
     }
