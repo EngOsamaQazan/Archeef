@@ -30,11 +30,87 @@ class DatabaseManager {
             this.isConnected = true;
             
             console.log('تم الاتصال بقاعدة البيانات بنجاح');
+            
+            // التحقق من وجود الجداول المطلوبة
+            await this.verifyDatabaseSchema();
+            
             return true;
         } catch (error) {
             console.error('خطأ في الاتصال بقاعدة البيانات:', error);
             this.isConnected = false;
             return false;
+        }
+    }
+
+    /**
+     * التحقق من وجود الجداول والأعمدة المطلوبة
+     */
+    async verifyDatabaseSchema() {
+        try {
+            // قائمة الجداول المطلوبة
+            const requiredTables = [
+                'employees',
+                'contracts', 
+                'transactions',
+                'transaction_details',
+                'app_users'
+            ];
+            
+            // التحقق من وجود كل جدول
+            for (const tableName of requiredTables) {
+                const { data, error } = await this.supabase
+                    .from(tableName)
+                    .select('*', { count: 'exact', head: true });
+                    
+                if (error) {
+                    console.warn(`تحذير: الجدول ${tableName} غير موجود أو لا يمكن الوصول إليه:`, error.message);
+                } else {
+                    console.log(`✓ الجدول ${tableName} موجود ويعمل بشكل صحيح`);
+                }
+            }
+            
+            // التحقق من وجود الموظفين الأساسيين
+            await this.verifyDefaultEmployees();
+            
+        } catch (error) {
+            console.warn('تحذير: لا يمكن التحقق من بنية قاعدة البيانات:', error);
+        }
+    }
+    
+    /**
+     * التحقق من وجود الموظفين الأساسيين
+     */
+    async verifyDefaultEmployees() {
+        try {
+            const { data: employees, error } = await this.supabase
+                .from('employees')
+                .select('name, department');
+                
+            if (error) {
+                console.warn('لا يمكن التحقق من الموظفين:', error.message);
+                return;
+            }
+            
+            const employeeNames = employees?.map(emp => emp.name) || [];
+            const requiredEmployees = [
+                'ربى الشريف',
+                'صفاء ابو قديري', 
+                'مؤمن قازان',
+                'حسان قازان',
+                'عمار قازان',
+                'أسامة قازان'
+            ];
+            
+            const missingEmployees = requiredEmployees.filter(name => !employeeNames.includes(name));
+            
+            if (missingEmployees.length > 0) {
+                console.warn('الموظفون المفقودون:', missingEmployees);
+            } else {
+                console.log('✓ جميع الموظفين الأساسيين موجودون');
+            }
+            
+        } catch (error) {
+            console.warn('خطأ في التحقق من الموظفين:', error);
         }
     }
 
