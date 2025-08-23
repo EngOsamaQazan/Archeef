@@ -399,55 +399,13 @@ class AuthManager {
             btnText.style.display = 'none';
             btnSpinner.style.display = 'block';
 
-            // محاولة تسجيل الدخول أولاً
-            let { data, error } = await db.supabase.auth.signInWithPassword({
+            // محاولة تسجيل الدخول
+            const { data, error } = await db.supabase.auth.signInWithPassword({
                 email,
                 password
             });
 
-            // إذا فشل تسجيل الدخول، حاول إنشاء المستخدم
-            if (error && error.message.includes('Invalid login credentials')) {
-                console.log('محاولة إنشاء مستخدم جديد...');
-                
-                const { data: signUpData, error: signUpError } = await db.supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        emailRedirectTo: window.location.origin
-                    }
-                });
-
-                if (signUpError) {
-                    // إذا فشل التسجيل أيضاً، اعرض رسالة خطأ مناسبة
-                    if (signUpError.message.includes('User already registered')) {
-                        throw new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة، يرجى التحقق من بيانات الاعتماد.');
-                    } else if (signUpError.message.includes('Password should be at least')) {
-                        throw new Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-                    } else {
-                        throw new Error(`خطأ في إنشاء الحساب: ${signUpError.message}`);
-                    }
-                }
-
-                // إذا نجح التسجيل، حاول تسجيل الدخول مرة أخرى
-                if (signUpData.user) {
-                    console.log('تم إنشاء المستخدم، محاولة تسجيل الدخول...');
-                    
-                    // انتظار قليل للتأكد من إنشاء المستخدم
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    const { data: loginData, error: loginError } = await db.supabase.auth.signInWithPassword({
-                        email,
-                        password
-                    });
-
-                    if (loginError) {
-                        throw new Error('تم إنشاء الحساب بنجاح، يرجى تأكيد بريدك الإلكتروني ثم المحاولة مرة أخرى');
-                    }
-
-                    data = loginData;
-                    error = loginError;
-                }
-            } else if (error) {
+            if (error) {
                 throw error;
             }
 
@@ -471,16 +429,8 @@ class AuthManager {
                 errorMessage = 'تم تجاوز عدد المحاولات المسموحة، يرجى المحاولة لاحقاً';
             } else if (error.message.includes('User already registered')) {
                 errorMessage = 'المستخدم مسجل مسبقاً، يرجى المحاولة مرة أخرى';
-            } else if (error.message.includes('تأكيد بريدك الإلكتروني')) {
-                errorMessage = error.message;
-            } else if (error.message.includes('كلمة المرور يجب')) {
-                errorMessage = error.message;
-            } else if (error.message.includes('خطأ في إنشاء الحساب')) {
-                errorMessage = error.message;
-            } else if (error.message.includes('البريد الإلكتروني أو كلمة المرور غير صحيحة')) {
-                errorMessage = error.message;
-            } else {
-                errorMessage = error.message || 'حدث خطأ غير متوقع';
+            } else if (error.message.includes('Invalid login credentials')) {
+                errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة، يرجى التحقق من بيانات الاعتماد.';
             }
 
             if (this.loginAttempts >= this.maxLoginAttempts) {
