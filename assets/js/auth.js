@@ -432,14 +432,20 @@ class AuthManager {
                 if (signUpData.user) {
                     console.log('تم إنشاء المستخدم، محاولة تسجيل الدخول...');
                     
-                    // عرض رسالة نجاح وطلب تأكيد البريد الإلكتروني
-                    this.showAuthError('تم إنشاء الحساب بنجاح! يرجى التحقق من بريدك الإلكتروني وتأكيد الحساب، ثم العودة لتسجيل الدخول.');
+                    // انتظار قليل للتأكد من إنشاء المستخدم
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                     
-                    // إعادة تفعيل الزر والعودة
-                    loginBtn.disabled = false;
-                    btnText.style.display = 'inline';
-                    btnSpinner.style.display = 'none';
-                    return;
+                    const { data: loginData, error: loginError } = await db.supabase.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+
+                    if (loginError) {
+                        throw new Error('تم إنشاء الحساب بنجاح، يرجى تأكيد بريدك الإلكتروني ثم المحاولة مرة أخرى');
+                    }
+
+                    data = loginData;
+                    error = loginError;
                 }
             } else if (error) {
                 throw error;
@@ -459,9 +465,7 @@ class AuthManager {
             
             let errorMessage = 'حدث خطأ في تسجيل الدخول';
             
-            if (error.message.includes('Invalid login credentials')) {
-                errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
-            } else if (error.message.includes('Email not confirmed')) {
+            if (error.message.includes('Email not confirmed')) {
                 errorMessage = 'يرجى تأكيد بريدك الإلكتروني أولاً';
             } else if (error.message.includes('Too many requests')) {
                 errorMessage = 'تم تجاوز عدد المحاولات المسموحة، يرجى المحاولة لاحقاً';
