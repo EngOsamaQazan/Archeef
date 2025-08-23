@@ -24,7 +24,13 @@ class DocumentManagementApp {
         try {
             console.log('🚀 بدء تهيئة التطبيق...');
 
-            // تهيئة نظام المصادقة أولاً
+            // تهيئة قاعدة البيانات أولاً
+            const dbConnected = await this.managers.db.initialize();
+            if (!dbConnected) {
+                throw new Error('فشل في الاتصال بقاعدة البيانات');
+            }
+
+            // تهيئة نظام المصادقة بعد قاعدة البيانات
             if (this.isAuthRequired) {
                 await this.managers.auth.initialize();
                 
@@ -32,12 +38,6 @@ class DocumentManagementApp {
                 if (!this.managers.auth.isAuthenticated) {
                     return; // سيتم عرض نموذج تسجيل الدخول
                 }
-            }
-
-            // تهيئة قاعدة البيانات
-            const dbConnected = await this.managers.db.initialize();
-            if (!dbConnected) {
-                throw new Error('فشل في الاتصال بقاعدة البيانات');
             }
 
             // تهيئة واجهة المستخدم
