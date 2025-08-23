@@ -399,43 +399,13 @@ class AuthManager {
             btnText.style.display = 'none';
             btnSpinner.style.display = 'block';
 
-            // محاولة تسجيل الدخول أولاً
-            let { data, error } = await db.supabase.auth.signInWithPassword({
+            // محاولة تسجيل الدخول
+            const { data, error } = await db.supabase.auth.signInWithPassword({
                 email,
                 password
             });
 
-            // إذا فشل تسجيل الدخول بسبب عدم وجود المستخدم، قم بإنشائه
-            if (error && error.message.includes('Invalid login credentials')) {
-                console.log('المستخدم غير موجود، جاري إنشاء حساب جديد...');
-                
-                // محاولة إنشاء المستخدم
-                const { data: signUpData, error: signUpError } = await db.supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        emailRedirectTo: undefined // تعطيل تأكيد البريد الإلكتروني
-                    }
-                });
-
-                if (signUpError) {
-                    throw signUpError;
-                }
-
-                // إذا تم إنشاء المستخدم بنجاح، قم بتسجيل الدخول مرة أخرى
-                if (signUpData.user) {
-                    const { data: loginData, error: loginError } = await db.supabase.auth.signInWithPassword({
-                        email,
-                        password
-                    });
-
-                    if (loginError) {
-                        throw loginError;
-                    }
-
-                    data = loginData;
-                }
-            } else if (error) {
+            if (error) {
                 throw error;
             }
 
