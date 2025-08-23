@@ -1,0 +1,42 @@
+{
+  "name": "document-management-system",
+  "version": "2.0.0",
+  "description": "نظام إدارة الوثائق - Document Management System",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve . --port 3000",
+    "build": "echo 'No build process needed for static files'",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "document-management",
+    "arabic",
+    "supabase",
+    "javascript",
+    "html",
+    "css"
+  ],
+  "author": "Document Management Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/document-management-system.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/document-management-system/issues"
+  },
+  "homepage": "https://github.com/your-username/document-management-system#readme",
+  "devDependencies": {
+    "serve": "^14.2.1"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}
