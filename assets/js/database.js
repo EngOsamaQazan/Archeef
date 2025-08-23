@@ -152,15 +152,21 @@ class DatabaseManager {
      */
     async getEmployees() {
         try {
+            console.log('🔍 جلب الموظفين...');
             const { data, error } = await this.supabase
                 .from('employees')
                 .select('*')
                 .order('name');
 
-            if (error) throw error;
+            if (error) {
+                console.error('خطأ في جلب الموظفين:', error.message);
+                throw error;
+            }
+            
+            console.log('✅ تم جلب الموظفين:', data?.length || 0);
             return data || [];
         } catch (error) {
-            console.error('خطأ في جلب الموظفين:', error);
+            console.error('خطأ في جلب الموظفين:', error.message);
             throw new Error(MESSAGES.error.databaseError);
         }
     }
@@ -361,6 +367,8 @@ class DatabaseManager {
      */
     async getStatistics() {
         try {
+            console.log('🔍 جلب الإحصائيات...');
+            
             // إجمالي العقود
             const { count: totalContracts } = await this.supabase
                 .from('contracts')
@@ -385,14 +393,17 @@ class DatabaseManager {
                 .from('employees')
                 .select('*', { count: 'exact', head: true });
 
-            return {
+            const stats = {
                 totalContracts: totalContracts || 0,
                 totalTransactions: totalTransactions || 0,
                 todayTransactions: todayTransactions || 0,
                 activeEmployees: activeEmployees || 0
             };
+            
+            console.log('✅ تم جلب الإحصائيات:', stats);
+            return stats;
         } catch (error) {
-            console.error('خطأ في جلب الإحصائيات:', error);
+            console.error('خطأ في جلب الإحصائيات:', error.message);
             throw new Error(MESSAGES.error.databaseError);
         }
     }

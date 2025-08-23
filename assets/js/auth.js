@@ -700,25 +700,28 @@ class AuthManager {
             this.currentUser = user;
             this.isAuthenticated = true;
 
-            console.log('🔍 جلب بيانات المستخدم من app_users...');
+            console.log('🔍 جلب بيانات المستخدم من app_users...', user.email);
             
             // جلب دور المستخدم مع معالجة محسنة للأخطاء
             let appUser = null;
             try {
                 const { data, error } = await db.supabase
                     .from('app_users')
-                    .select('role, employee_id, employees(name, department)')
+                    .select('*')
                     .eq('user_id', user.id)
                     .single();
                     
-                if (error && error.code !== 'PGRST116') {
-                    console.warn('خطأ في جلب بيانات المستخدم:', error);
+                if (error) {
+                    console.warn('خطأ في جلب بيانات المستخدم:', error.message);
+                    if (error.code !== 'PGRST116') {
+                        throw error;
+                    }
                 }
                 
                 appUser = data;
                 console.log('📊 بيانات المستخدم المجلبة:', appUser);
             } catch (error) {
-                console.warn('لا يمكن جلب بيانات المستخدم من app_users:', error);
+                console.warn('لا يمكن جلب بيانات المستخدم من app_users:', error.message);
             }
 
             if (!appUser) {
@@ -735,49 +738,49 @@ class AuthManager {
                             role: defaultRole,
                             is_active: true
                         })
-                        .select('role, employee_id')
+                        .select('*')
                         .single();
                         
                     if (insertError) {
-                        console.warn('⚠️ لا يمكن إنشاء مستخدم في قاعدة البيانات:', insertError);
+                        console.warn('⚠️ لا يمكن إنشاء مستخدم في قاعدة البيانات:', insertError.message);
                         console.log('📝 استخدام قيم افتراضية محلية...');
                         
                         appUser = {
                             role: defaultRole,
                             employee_id: null,
-                            employees: null
+                            is_active: true
                         };
                     } else {
                         console.log('✅ تم إنشاء المستخدم بنجاح:', newAppUser);
                         appUser = newAppUser;
                     }
                 } catch (error) {
-                    console.error('❌ خطأ في إنشاء المستخدم الافتراضي:', error);
+                    console.error('❌ خطأ في إنشاء المستخدم الافتراضي:', error.message);
                     console.log('📝 استخدام قيم افتراضية كحل أخير...');
                     
                     appUser = {
                         role: defaultRole,
                         employee_id: null,
-                        employees: null
+                        is_active: true
                     };
                 }
             }
 
             // تعيين دور المستخدم وبياناته
             this.userRole = appUser.role;
-            this.employeeData = appUser.employees;
+            this.employeeData = null; // سيتم جلبها لاحقاً إذا لزم الأمر
 
             console.log('✅ تم تسجيل الدخول بنجاح:', {
                 email: user.email,
                 role: this.userRole,
-                employee: this.employeeData?.name || 'غير محدد'
+                userId: user.id
             });
 
             // تحميل التطبيق الرئيسي
             await this.loadMainApp();
 
         } catch (error) {
-            console.error('خطأ في معالجة نجاح المصادقة:', error);
+            console.error('خطأ في معالجة نجاح المصادقة:', error.message);
             
             // في حالة الخطأ، استخدم قيم افتراضية واستمر
             console.log('🔄 استخدام قيم افتراضية والمتابعة...');
