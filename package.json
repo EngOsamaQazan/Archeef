@@ -5,7 +5,7 @@
   "main": "index.html",
   "scripts": {
     "start": "npx serve .",
-    "dev": "npx serve . --port 3000",
+    "dev": "npx serve . -l 3000",
     "build": "echo 'No build process needed for static files'",
     "test": "echo 'No tests specified'"
   },
