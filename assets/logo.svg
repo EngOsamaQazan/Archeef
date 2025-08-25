@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
+  <style>
+    .logo-text { font-family: Arial, sans-serif; font-weight: bold; font-size: 24px; }
+    .logo-bg { fill: #2c3e50; }
+    .logo-fg { fill: #ecf0f1; }
+  </style>
+  <circle class="logo-bg" cx="40" cy="40" r="38" />
+  <text x="40" y="48" text-anchor="middle" class="logo-text logo-fg">أرشيف</text>
+  <path class="logo-fg" d="M25,25 L55,25 L55,35 L50,35 L50,30 L30,30 L30,35 L25,35 Z" />
+  <rect class="logo-fg" x="30" y="35" width="20" height="5" />
+  <rect class="logo-fg" x="35" y="40" width="10" height="15" />
+</svg>
