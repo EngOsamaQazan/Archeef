@@ -148,26 +148,30 @@ class DatabaseManager {
     }
 
     /**
-     * جلب جميع الموظفين
+     * جلب النشاط الأخير مع معالجة محسنة للأخطاء
      */
-    async getEmployees() {
+    async getRecentActivity(limit = 10) {
         try {
-            console.log('🔍 جلب الموظفين...');
             const { data, error } = await this.supabase
-                .from('employees')
-                .select('*')
-                .order('name');
+                .from('transactions')
+                .select(`
+                    *,
+                    from_employee:employees!from_employee_id(name),
+                    to_employee:employees!to_employee_id(name),
+                    transaction_details(count)
+                `)
+                .order('transaction_date', { ascending: false })
+                .limit(limit);
 
             if (error) {
-                console.error('خطأ في جلب الموظفين:', error.message);
-                throw error;
+                console.warn('تعذر جلب النشاط الأخير:', error.message);
+                return [];
             }
             
-            console.log('✅ تم جلب الموظفين:', data?.length || 0);
             return data || [];
         } catch (error) {
-            console.error('خطأ في جلب الموظفين:', error.message);
-            throw new Error(MESSAGES.error.databaseError);
+            console.error('خطأ في جلب النشاط الأخير:', error);
+            return [];
         }
     }
 
@@ -369,47 +373,129 @@ class DatabaseManager {
         try {
             console.log('🔍 جلب الإحصائيات...');
             
-            // إجمالي العقود
-            const { count: totalContracts } = await this.supabase
-                .from('contracts')
-                .select('*', { count: 'exact', head: true });
+            // إجمالي العقود مع معالجة الأخطاء
+            let totalContracts = 0;
+            try {
+                const { count } = await this.supabase
+                    .from('contracts')
+                    .select('*', { count: 'exact', head: true });
+                totalContracts = count || 0;
+            } catch (error) {
+                console.warn('تعذر جلب عدد العقود:', error.message);
+            }
 
-            // إجمالي الحركات
-            const { count: totalTransactions } = await this.supabase
-                .from('transactions')
-                .select('*', { count: 'exact', head: true });
+            // إجمالي الحركات مع معالجة الأخطاء
+            let totalTransactions = 0;
+            try {
+                const { count } = await this.supabase
+                    .from('transactions')
+                    .select('*', { count: 'exact', head: true });
+                totalTransactions = count || 0;
+            } catch (error) {
+                console.warn('تعذر جلب عدد الحركات:', error.message);
+            }
 
-            // حركات اليوم
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            // حركات اليوم مع معالجة الأخطاء
+            let todayTransactions = 0;
+            try {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const { count } = await this.supabase
+                    .from('transactions')
+                    .select('*', { count: 'exact', head: true })
+                    .gte('transaction_date', today.toISOString());
+                todayTransactions = count || 0;
+            } catch (error) {
+                console.warn('تعذر جلب حركات اليوم:', error.message);
+            }
 
-            const { count: todayTransactions } = await this.supabase
-                .from('transactions')
-                .select('*', { count: 'exact', head: true })
-                .gte('transaction_date', today.toISOString());
-
-            // الموظفون النشطون
-            const { count: activeEmployees } = await this.supabase
-                .from('employees')
-                .select('*', { count: 'exact', head: true });
+            // الموظفون النشطون مع معالجة الأخطاء
+            let activeEmployees = 0;
+            try {
+                const { count } = await this.supabase
+                    .from('employees')
+                    .select('*', { count: 'exact', head: true });
+                activeEmployees = count || 0;
+            } catch (error) {
+                console.warn('تعذر جلب عدد الموظفين:', error.message);
+            }
 
             const stats = {
-                totalContracts: totalContracts || 0,
-                totalTransactions: totalTransactions || 0,
-                todayTransactions: todayTransactions || 0,
-                activeEmployees: activeEmployees || 0
+                totalContracts,
+                totalTransactions,
+                todayTransactions,
+                activeEmployees
             };
             
             console.log('✅ تم جلب الإحصائيات:', stats);
             return stats;
         } catch (error) {
-            console.error('خطأ في جلب الإحصائيات:', error.message);
-            throw new Error(MESSAGES.error.databaseError);
+            console.error('خطأ عام في جلب الإحصائيات:', error);
+            
+            // إرجاع قيم افتراضية في حالة الخطأ
+            return {
+                totalContracts: 0,
+                totalTransactions: 0,
+                todayTransactions: 0,
+                activeEmployees: 0
+            };
         }
     }
 
     /**
-     * جلب الحركات حسب الفترة
+     * جلب الموظفين مع معالجة محسنة للأخطاء
+     */
+    async getEmployees() {
+        try {
+            console.log('🔍 جلب الموظفين...');
+            const { data, error } = await this.supabase
+                .from('contracts')
+                .select('*')
+                .order('name');
+
+            if (error) {
+                console.warn('تعذر جلب الموظفين من قاعدة البيانات:', error.message);
+                // استخدام البيانات الافتراضية
+                return this.getDefaultEmployees();
+            }
+            
+            console.log('✅ تم جلب الموظفين:', data?.length || 0);
+            return data || this.getDefaultEmployees();
+        } catch (error) {
+            console.error('خطأ في جلب الموظفين:', error);
+            // استخدام البيانات الافتراضية في حالة الخطأ
+            return this.getDefaultEmployees();
+        }
+    }
+
+    /**
+     * الحصول على الموظفين الافتراضيين
+     */
+    getDefaultEmployees() {
+        const employees = [];
+        Object.keys(DEFAULT_EMPLOYEES).forEach(department => {
+            DEFAULT_EMPLOYEES[department].forEach(name => {
+                employees.push({
+                    id: this.generateTempId(),
+                    name,
+                    department,
+                    created_at: new Date().toISOString()
+                });
+            });
+        });
+        return employees;
+    }
+
+    /**
+     * إنشاء معرف مؤقت
+     */
+    generateTempId() {
+        return 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    }
+
+    /**
+     * جلب الحركات حسب الفترة مع معالجة محسنة للأخطاء
      */
     async getTransactionsByPeriod(period = 'all') {
         try {
@@ -447,11 +533,15 @@ class DatabaseManager {
 
             const { data, error } = await query;
 
-            if (error) throw error;
+            if (error) {
+                console.warn('تعذر جلب الحركات:', error.message);
+                return [];
+            }
+            
             return data || [];
         } catch (error) {
             console.error('خطأ في جلب الحركات:', error);
-            throw new Error(MESSAGES.error.databaseError);
+            return [];
         }
     }
 

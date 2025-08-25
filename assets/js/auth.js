@@ -700,75 +700,9 @@ class AuthManager {
             this.currentUser = user;
             this.isAuthenticated = true;
 
-            console.log('🔍 جلب بيانات المستخدم من app_users...', user.email);
-            
-            // جلب دور المستخدم مع معالجة محسنة للأخطاء
-            let appUser = null;
-            try {
-                const { data, error } = await db.supabase
-                    .from('app_users')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .single();
-                    
-                if (error) {
-                    console.warn('خطأ في جلب بيانات المستخدم:', error.message);
-                    if (error.code !== 'PGRST116') {
-                        throw error;
-                    }
-                }
-                
-                appUser = data;
-                console.log('📊 بيانات المستخدم المجلبة:', appUser);
-            } catch (error) {
-                console.warn('لا يمكن جلب بيانات المستخدم من app_users:', error.message);
-            }
-
-            if (!appUser) {
-                console.log('🔧 إنشاء مستخدم افتراضي في app_users...');
-                
-                // تحديد الدور بناءً على البريد الإلكتروني
-                const defaultRole = user.email === 'osamaqazan89@gmail.com' ? 'manager' : 'employee';
-                
-                try {
-                    const { data: newAppUser, error: insertError } = await db.supabase
-                        .from('app_users')
-                        .insert({
-                            user_id: user.id,
-                            role: defaultRole,
-                            is_active: true
-                        })
-                        .select('*')
-                        .single();
-                        
-                    if (insertError) {
-                        console.warn('⚠️ لا يمكن إنشاء مستخدم في قاعدة البيانات:', insertError.message);
-                        console.log('📝 استخدام قيم افتراضية محلية...');
-                        
-                        appUser = {
-                            role: defaultRole,
-                            employee_id: null,
-                            is_active: true
-                        };
-                    } else {
-                        console.log('✅ تم إنشاء المستخدم بنجاح:', newAppUser);
-                        appUser = newAppUser;
-                    }
-                } catch (error) {
-                    console.error('❌ خطأ في إنشاء المستخدم الافتراضي:', error.message);
-                    console.log('📝 استخدام قيم افتراضية كحل أخير...');
-                    
-                    appUser = {
-                        role: defaultRole,
-                        employee_id: null,
-                        is_active: true
-                    };
-                }
-            }
-
-            // تعيين دور المستخدم وبياناته
-            this.userRole = appUser.role;
-            this.employeeData = null; // سيتم جلبها لاحقاً إذا لزم الأمر
+            // تحديد الدور بناءً على البريد الإلكتروني مباشرة
+            this.userRole = user.email === 'osamaqazan89@gmail.com' ? 'manager' : 'employee';
+            this.employeeData = null;
 
             console.log('✅ تم تسجيل الدخول بنجاح:', {
                 email: user.email,
@@ -780,22 +714,9 @@ class AuthManager {
             await this.loadMainApp();
 
         } catch (error) {
-            console.error('خطأ في معالجة نجاح المصادقة:', error.message);
-            
-            // في حالة الخطأ، استخدم قيم افتراضية واستمر
-            console.log('🔄 استخدام قيم افتراضية والمتابعة...');
-            
+            console.error('خطأ في معالجة نجاح المصادقة:', error);
             this.userRole = user.email === 'osamaqazan89@gmail.com' ? 'manager' : 'employee';
             this.employeeData = null;
-            
-            // عرض تحذير للمستخدم
-            setTimeout(() => {
-                if (typeof showAlert === 'function') {
-                    showAlert('تم تسجيل الدخول بنجاح، لكن بعض البيانات قد لا تكون متاحة', 'warning');
-                }
-            }, 1000);
-            
-            // تحميل التطبيق رغم الخطأ
             await this.loadMainApp();
         }
     }

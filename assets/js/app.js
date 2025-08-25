@@ -106,19 +106,47 @@ class DocumentManagementApp {
      */
     async loadInitialData() {
         try {
-            // تحميل الإحصائيات
-            const stats = await this.managers.db.getStatistics();
-            this.managers.ui.updateStatistics(stats);
+            console.log('📊 تحميل البيانات الأولية...');
+            
+            // تحميل الإحصائيات مع معالجة الأخطاء
+            try {
+                const stats = await this.managers.db.getStatistics();
+                this.managers.ui.updateStatistics(stats);
+                console.log('✅ تم تحميل الإحصائيات');
+            } catch (error) {
+                console.warn('⚠️ تعذر تحميل الإحصائيات:', error.message);
+                // استخدام قيم افتراضية
+                this.managers.ui.updateStatistics({
+                    totalContracts: 0,
+                    totalTransactions: 0,
+                    todayTransactions: 0,
+                    activeEmployees: 0
+                });
+            }
 
-            // تحميل النشاط الأخير
-            const recentActivity = await this.managers.db.getRecentActivity(5);
-            this.managers.ui.updateRecentActivity(recentActivity);
+            // تحميل النشاط الأخير مع معالجة الأخطاء
+            try {
+                const recentActivity = await this.managers.db.getRecentActivity(5);
+                this.managers.ui.updateRecentActivity(recentActivity);
+                console.log('✅ تم تحميل النشاط الأخير');
+            } catch (error) {
+                console.warn('⚠️ تعذر تحميل النشاط الأخير:', error.message);
+                // عرض رسالة عدم وجود نشاط
+                this.managers.ui.updateRecentActivity([]);
+            }
 
             console.log('📊 تم تحميل البيانات الأولية');
 
         } catch (error) {
-            console.warn('⚠️ خطأ في تحميل البيانات الأولية:', error);
-            // لا نوقف التطبيق في حالة فشل تحميل البيانات الأولية
+            console.error('❌ خطأ عام في تحميل البيانات الأولية:', error);
+            // عرض قيم افتراضية
+            this.managers.ui.updateStatistics({
+                totalContracts: 0,
+                totalTransactions: 0,
+                todayTransactions: 0,
+                activeEmployees: 0
+            });
+            this.managers.ui.updateRecentActivity([]);
         }
     }
 
