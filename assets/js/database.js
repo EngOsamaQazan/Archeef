@@ -148,30 +148,26 @@ class DatabaseManager {
     }
 
     /**
-     * جلب النشاط الأخير مع معالجة محسنة للأخطاء
+     * جلب جميع الموظفين
      */
-    async getRecentActivity(limit = 10) {
+    async getEmployees() {
         try {
+            console.log('🔍 جلب الموظفين...');
             const { data, error } = await this.supabase
-                .from('transactions')
-                .select(`
-                    *,
-                    from_employee:employees!from_employee_id(name),
-                    to_employee:employees!to_employee_id(name),
-                    transaction_details(count)
-                `)
-                .order('transaction_date', { ascending: false })
-                .limit(limit);
+                .from('employees')
+                .select('*')
+                .order('name');
 
             if (error) {
-                console.warn('تعذر جلب النشاط الأخير:', error.message);
-                return [];
+                console.error('خطأ في جلب الموظفين:', error.message);
+                throw error;
             }
             
+            console.log('✅ تم جلب الموظفين:', data?.length || 0);
             return data || [];
         } catch (error) {
-            console.error('خطأ في جلب النشاط الأخير:', error);
-            return [];
+            console.error('خطأ في جلب الموظفين:', error.message);
+            throw new Error(MESSAGES.error.databaseError);
         }
     }
 
@@ -446,11 +442,11 @@ class DatabaseManager {
     /**
      * جلب الموظفين مع معالجة محسنة للأخطاء
      */
-    async getEmployees() {
+    async getEmployeesEnhanced() {
         try {
             console.log('🔍 جلب الموظفين...');
             const { data, error } = await this.supabase
-                .from('contracts')
+                .from('employees')
                 .select('*')
                 .order('name');
 
@@ -495,7 +491,7 @@ class DatabaseManager {
     }
 
     /**
-     * جلب الحركات حسب الفترة مع معالجة محسنة للأخطاء
+     * جلب الحركات حسب الفترة
      */
     async getTransactionsByPeriod(period = 'all') {
         try {
@@ -533,15 +529,11 @@ class DatabaseManager {
 
             const { data, error } = await query;
 
-            if (error) {
-                console.warn('تعذر جلب الحركات:', error.message);
-                return [];
-            }
-            
+            if (error) throw error;
             return data || [];
         } catch (error) {
             console.error('خطأ في جلب الحركات:', error);
-            return [];
+            throw new Error(MESSAGES.error.databaseError);
         }
     }
 
